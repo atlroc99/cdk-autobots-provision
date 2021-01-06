@@ -1,25 +1,18 @@
-package com.myorg;
+package com.myorg.services;
 
-import javafx.concurrent.Task;
 import software.amazon.awscdk.core.Construct;
 import software.amazon.awscdk.core.Stack;
 import software.amazon.awscdk.core.StackProps;
-import software.amazon.awscdk.services.ec2.IVpc;
-import software.amazon.awscdk.services.ec2.SecurityGroup;
-import software.amazon.awscdk.services.ec2.Vpc;
-import software.amazon.awscdk.services.ec2.VpcLookupOptions;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecs.*;
 
-import java.util.Arrays;
-
-public class CdkFargateStack2 extends Stack {
-    public CdkFargateStack2(final Construct scope, final String id) {
+public class GeneralStack extends Stack {
+    public GeneralStack(final Construct scope, final String id) {
         this(scope, id, null);
     }
 
-    public CdkFargateStack2(Construct scope, String id, StackProps props) {
+    public GeneralStack(Construct scope, String id, StackProps props) {
         super(scope, id, props);
 
 //        Vpc _myVpc = Vpc.Builder.create(this,"myVPC").maxAzs(2).natGateways(1).build();

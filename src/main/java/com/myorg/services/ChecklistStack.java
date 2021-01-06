@@ -1,4 +1,4 @@
-package com.myorg;
+package com.myorg.services;
 
 import software.amazon.awscdk.core.*;
 import software.amazon.awscdk.services.ec2.Vpc;
@@ -9,12 +9,12 @@ import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedFarga
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedTaskImageOptions;
 import software.amazon.awscdk.services.logs.LogGroup;
 
-public class CdkFargateStack extends Stack {
-    public CdkFargateStack(final Construct scope, final String id) {
+public class ChecklistStack extends Stack {
+    public ChecklistStack(final Construct scope, final String id) {
         this(scope, id, null);
     }
 
-    public CdkFargateStack(final Construct scope, final String id, final StackProps props) {
+    public ChecklistStack(final Construct scope, final String id, final StackProps props) {
         super(scope, id, props);
 
         // Create VPC
@@ -22,41 +22,41 @@ public class CdkFargateStack extends Stack {
         Cluster cluster = Cluster.Builder.create(this, "FargateCluster_java").vpc(myVPC).build();
 
         //DO NOT add <AccountNO>.dkr.ecr.us-east-1.amazonaws.com/ with the ECR repository name
+        //429506819373.dkr.ecr.us-east-1.amazonaws.com/alc-autobots-migration:questionnaire-service
         final String ECR_REPO_NAME = "alc-autobots-migration";
-        final String TAG_NAME = "checklist-service";
+        final String CHECKLIST_TAG_NAME = "checklist-service";
 
         // Image from the Docker Hub
-        final String UI_DOCKER_IMAGE = "thiethaa/alc-autobots-ui";
+//        final String UI_DOCKER_IMAGE = "thiethaa/alc-autobots-ui";
 
-        Repository repositoryBuilder = Repository.Builder.create(this, "repositoryBuilderID").build();
-        IRepository iRepository = repositoryBuilder.fromRepositoryName(this, "ecrRepoID", ECR_REPO_NAME);
+        Repository checklistRepositoryBuilder = Repository.Builder.create(this, "checklistRepositoryBuilderID").build();
+        IRepository iRepository_checklist = checklistRepositoryBuilder.fromRepositoryName(this, "ecrRepoChecklistID", ECR_REPO_NAME);
 
         // create ApplicationLoadBalanced Fargate Service from the ECS_Patter: AWS gives us a load balancer url for our microservices
-        ApplicationLoadBalancedFargateService appLoadBalFargateService = ApplicationLoadBalancedFargateService.Builder.create(this, "myApplicationLaodBalancedFargateService")
+        ApplicationLoadBalancedFargateService checklistServiceALB = ApplicationLoadBalancedFargateService.Builder.create(this, "checklistApplicationLaodBalancedFargateService")
                 .cluster(cluster)
                 .cpu(256)
-                .serviceName("checklist-service-1")
+                .serviceName("checklist-service")
                 .desiredCount(2)
                 .memoryLimitMiB(512)
                 .publicLoadBalancer(true)
                 .taskImageOptions(ApplicationLoadBalancedTaskImageOptions.builder()
                         // .image(ContainerImage.fromRegistry(CHECKLIST_IMAGE)) // Image read from repos other than ECR
-                        .image(ContainerImage.fromEcrRepository(iRepository, TAG_NAME))
-                        .containerPort(7070)
+                        .image(ContainerImage.fromEcrRepository(iRepository_checklist, CHECKLIST_TAG_NAME))
                         .enableLogging(true)
                         .build())
                 .build();
 
         // prints the App Load Balancer URL in teh Cloud Formations output tab
-        CfnOutput cfnOutput = CfnOutput.Builder.create(this, "cloudFormationOutputID")
-                .description("Application Load balacner URL for the Fargate Service")
-                .value(appLoadBalFargateService.getLoadBalancer().getLoadBalancerDnsName())
+        CfnOutput checklist_cfnOutput = CfnOutput.Builder.create(this, "checklistCloudFormationOutputID")
+                .description("Application Load balancer URL for the Fargate Service")
+                .value(checklistServiceALB.getLoadBalancer().getLoadBalancerDnsName())
                 .build();
 
         // Create Loggroup to track the container internal logs
-        LogGroup logGroup = LogGroup.Builder.create(this, "logGroupId")
+        LogGroup checklist_logGroup = LogGroup.Builder.create(this, "checklistLogGroupId")
                 .removalPolicy(RemovalPolicy.DESTROY)
-                .logGroupName(appLoadBalFargateService.getService().getServiceName())
+                .logGroupName(checklistServiceALB.getService().getServiceName())
                 .build();
     }
 }

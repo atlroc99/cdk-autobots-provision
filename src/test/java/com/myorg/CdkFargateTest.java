@@ -1,5 +1,6 @@
 package com.myorg;
 
+import com.myorg.services.ChecklistStack;
 import software.amazon.awscdk.core.App;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +18,7 @@ public class CdkFargateTest {
     @Test
     public void testStack() throws IOException {
         App app = new App();
-        CdkFargateStack stack = new CdkFargateStack(app, "test");
+        ChecklistStack stack = new ChecklistStack(app, "test");
 
         // synthesize the stack to a CloudFormation template and compare against
         // a checked-in JSON file.

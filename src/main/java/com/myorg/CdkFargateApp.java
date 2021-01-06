@@ -1,5 +1,8 @@
 package com.myorg;
 
+import com.myorg.services.ChecklistStack;
+import com.myorg.services.GeneralStack;
+import com.myorg.services.QuestionnaireStack;
 import software.amazon.awscdk.core.App;
 import software.amazon.awscdk.core.Environment;
 import software.amazon.awscdk.core.StackProps;
@@ -17,8 +20,9 @@ public class CdkFargateApp {
                 .terminationProtection(false)
                 .build();
 
-        new CdkFargateStack(app, "CdkFargateStack", stackProps);
-        new CdkFargateStack2(app, "CdkFargateStack2", stackProps);
+        new GeneralStack(app, "general-stack", stackProps);
+        new QuestionnaireStack(app, "questionnaire-stack", stackProps);
+        new ChecklistStack(app, "checklist-stack", stackProps);
         app.synth();
     }
 }
