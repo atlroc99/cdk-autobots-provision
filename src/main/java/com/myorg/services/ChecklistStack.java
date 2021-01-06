@@ -18,45 +18,61 @@ public class ChecklistStack extends Stack {
         super(scope, id, props);
 
         // Create VPC
-        Vpc myVPC = Vpc.Builder.create(this, "myVPC").build();
-        Cluster cluster = Cluster.Builder.create(this, "FargateCluster_java").vpc(myVPC).build();
+//        Vpc myVPC = Vpc.Builder.create(this, "myVPC").build();
+//        Cluster cluster = Cluster.Builder.create(this, "FargateCluster_java").vpc(myVPC).build();
+
+        Vpc myVpc = Vpc.Builder.create(this, "myVPC").build();
+        Cluster cluster = Cluster.Builder.create(this, "autobotsClusterID")
+                .vpc(myVpc)
+                .clusterName("CDK-AUTOBOTS-ECS-CLUSTER")
+                .build();
 
         //DO NOT add <AccountNO>.dkr.ecr.us-east-1.amazonaws.com/ with the ECR repository name
-        //429506819373.dkr.ecr.us-east-1.amazonaws.com/alc-autobots-migration:questionnaire-service
+        //429506819373.dkr.ecr.us-east-1.amazonaws.com/alc-autobots-migration:checklist-service
         final String ECR_REPO_NAME = "alc-autobots-migration";
         final String CHECKLIST_TAG_NAME = "checklist-service";
 
         // Image from the Docker Hub
 //        final String UI_DOCKER_IMAGE = "thiethaa/alc-autobots-ui";
-
+/*
         Repository checklistRepositoryBuilder = Repository.Builder.create(this, "checklistRepositoryBuilderID").build();
         IRepository iRepository_checklist = checklistRepositoryBuilder.fromRepositoryName(this, "ecrRepoChecklistID", ECR_REPO_NAME);
+*/
+
+        IRepository iRepository_checklist = Repository.fromRepositoryName(this, "ecrChecklistRepoID", ECR_REPO_NAME);
+        System.out.println("repository name: " + iRepository_checklist.getRepositoryName());
 
         // create ApplicationLoadBalanced Fargate Service from the ECS_Patter: AWS gives us a load balancer url for our microservices
-        ApplicationLoadBalancedFargateService checklistServiceALB = ApplicationLoadBalancedFargateService.Builder.create(this, "checklistApplicationLaodBalancedFargateService")
+        ApplicationLoadBalancedFargateService checklistServiceALB = ApplicationLoadBalancedFargateService.Builder.create(this, "checklistApplicationLoadBalancedFargateService")
                 .cluster(cluster)
                 .cpu(256)
                 .serviceName("checklist-service")
                 .desiredCount(2)
                 .memoryLimitMiB(512)
                 .publicLoadBalancer(true)
+                .listenerPort(7070)
                 .taskImageOptions(ApplicationLoadBalancedTaskImageOptions.builder()
-                        // .image(ContainerImage.fromRegistry(CHECKLIST_IMAGE)) // Image read from repos other than ECR
                         .image(ContainerImage.fromEcrRepository(iRepository_checklist, CHECKLIST_TAG_NAME))
                         .enableLogging(true)
                         .build())
                 .build();
 
+        ContainerDefinition containerDefinition = checklistServiceALB.getTaskDefinition().getDefaultContainer();
+        FargateService fargateService = checklistServiceALB.getService();
+
+        System.out.println("container name: " + containerDefinition.getContainerName());
+
+
         // prints the App Load Balancer URL in teh Cloud Formations output tab
-        CfnOutput checklist_cfnOutput = CfnOutput.Builder.create(this, "checklistCloudFormationOutputID")
+        CfnOutput checklist_output = CfnOutput.Builder.create(this, "checklistCloudFormationOutputID")
                 .description("Application Load balancer URL for the Fargate Service")
                 .value(checklistServiceALB.getLoadBalancer().getLoadBalancerDnsName())
                 .build();
 
         // Create Loggroup to track the container internal logs
-        LogGroup checklist_logGroup = LogGroup.Builder.create(this, "checklistLogGroupId")
-                .removalPolicy(RemovalPolicy.DESTROY)
+        LogGroup checklist_lg = LogGroup.Builder.create(this, "checklistLogGroupId")
                 .logGroupName(checklistServiceALB.getService().getServiceName())
+                .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
     }
 }
