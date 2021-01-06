@@ -1,15 +1,24 @@
 package com.myorg;
 
 import software.amazon.awscdk.core.App;
-
-import java.util.Arrays;
+import software.amazon.awscdk.core.Environment;
+import software.amazon.awscdk.core.StackProps;
 
 public class CdkFargateApp {
     public static void main(final String[] args) {
         App app = new App();
 
-        new CdkFargateStack(app, "CdkFargateStack");
+//        create stack prop and pass it to the stack (containing stack props such as account no, region, env, etc)
+        StackProps stackProps = StackProps.builder()
+                .env(Environment.builder()
+                        .account("429506819373")
+                        .region("us-east-1")
+                        .build())
+                .terminationProtection(false)
+                .build();
 
+        new CdkFargateStack(app, "CdkFargateStack", stackProps);
+        new CdkFargateStack2(app, "CdkFargateStack2", stackProps);
         app.synth();
     }
 }
