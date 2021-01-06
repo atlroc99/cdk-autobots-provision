@@ -8,7 +8,7 @@ It is a [Maven](https://maven.apache.org/) based project, so you can open this p
 
 ## Useful commands
 
- * `mvn package`     compile and run tests
+ * `mvn package`     compile and run tests OR run with mvn clean package -DskipTests=true
  * `cdk ls`          list all stacks in the app
  * `cdk synth`       emits the synthesized CloudFormation template
  * `cdk deploy`      deploy this stack to your default AWS account/region
