@@ -1,6 +1,8 @@
 package com.myorg.services;
 
 import software.amazon.awscdk.core.*;
+import software.amazon.awscdk.services.ec2.ISecurityGroup;
+import software.amazon.awscdk.services.ec2.SecurityGroup;
 import software.amazon.awscdk.services.ec2.Vpc;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
@@ -8,6 +10,8 @@ import software.amazon.awscdk.services.ecs.*;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedFargateService;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedTaskImageOptions;
 import software.amazon.awscdk.services.logs.LogGroup;
+
+import java.util.Arrays;
 
 public class ChecklistStack extends Stack {
     public ChecklistStack(final Construct scope, final String id) {
@@ -18,14 +22,20 @@ public class ChecklistStack extends Stack {
         super(scope, id, props);
 
         // Create VPC
-//        Vpc myVPC = Vpc.Builder.create(this, "myVPC").build();
-//        Cluster cluster = Cluster.Builder.create(this, "FargateCluster_java").vpc(myVPC).build();
-
-        Vpc myVpc = Vpc.Builder.create(this, "myVPC").build();
-        Cluster cluster = Cluster.Builder.create(this, "autobotsClusterID")
-                .vpc(myVpc)
+        Vpc myVPC = Vpc.Builder.create(this, "myVPC").maxAzs(2).build();
+       /* Cluster cluster = Cluster.Builder.create(this, "autobotsClusterID")
+                .vpc(myVPC)
                 .clusterName("CDK-AUTOBOTS-ECS-CLUSTER")
+                .build();*/
+
+        ISecurityGroup iSecurityGroup = SecurityGroup.fromSecurityGroupId(this, "cdkAutobotsClusterID", "sg-005e39b20967671f6");
+        ClusterAttributes clusterAttributes = ClusterAttributes.builder()
+                .clusterName("CDK-AUTOBOTS-ECS-CLUSTER")
+                .securityGroups(Arrays.asList(iSecurityGroup))
+                .vpc(myVPC)
                 .build();
+
+        ICluster iCluster = Cluster.fromClusterAttributes(this, "cdkAutobotsCluster", clusterAttributes);
 
         //DO NOT add <AccountNO>.dkr.ecr.us-east-1.amazonaws.com/ with the ECR repository name
         //429506819373.dkr.ecr.us-east-1.amazonaws.com/alc-autobots-migration:checklist-service
@@ -34,27 +44,26 @@ public class ChecklistStack extends Stack {
 
         // Image from the Docker Hub
 //        final String UI_DOCKER_IMAGE = "thiethaa/alc-autobots-ui";
-/*
         Repository checklistRepositoryBuilder = Repository.Builder.create(this, "checklistRepositoryBuilderID").build();
         IRepository iRepository_checklist = checklistRepositoryBuilder.fromRepositoryName(this, "ecrRepoChecklistID", ECR_REPO_NAME);
-*/
-
-        IRepository iRepository_checklist = Repository.fromRepositoryName(this, "ecrChecklistRepoID", ECR_REPO_NAME);
+//        IRepository iRepository_checklist = Repository.fromRepositoryName(this, "ecrChecklistRepoID", ECR_REPO_NAME);
         System.out.println("repository name: " + iRepository_checklist.getRepositoryName());
 
         // create ApplicationLoadBalanced Fargate Service from the ECS_Patter: AWS gives us a load balancer url for our microservices
         ApplicationLoadBalancedFargateService checklistServiceALB = ApplicationLoadBalancedFargateService.Builder.create(this, "checklistApplicationLoadBalancedFargateService")
-                .cluster(cluster)
-                .cpu(256)
+                .cluster(iCluster)
+                .cpu(512)
                 .serviceName("checklist-service")
                 .desiredCount(2)
-                .memoryLimitMiB(512)
+                .memoryLimitMiB(1024)
                 .publicLoadBalancer(true)
-                .listenerPort(7070)
                 .taskImageOptions(ApplicationLoadBalancedTaskImageOptions.builder()
                         .image(ContainerImage.fromEcrRepository(iRepository_checklist, CHECKLIST_TAG_NAME))
                         .enableLogging(true)
+                        .containerPort(7070)
                         .build())
+                .openListener(true)
+                .listenerPort(80)
                 .build();
 
         ContainerDefinition containerDefinition = checklistServiceALB.getTaskDefinition().getDefaultContainer();
